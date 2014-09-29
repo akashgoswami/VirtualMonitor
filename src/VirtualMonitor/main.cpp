@@ -122,11 +122,12 @@ bool ReadTextFile(const char* pFileName, lineCallBack fun)
 		// Do not allocate more than 1Meg
 		if (tempSize < 0x100000)
 		{
+			tempSize += 100;
 			tempBuffer = (char*) malloc(tempSize);
 			if (tempBuffer)
 			{
 				RTPrintf("\nAllocated memory. Starting conversion");
-				if ( 0 == WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)(pHeader), curSz, tempBuffer, tempSize, NULL, NULL))
+				if ( 0 != WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)(pHeader), curSz, tempBuffer, tempSize, NULL, NULL))
 				{
 					RTPrintf("\nConversion completed. Swapping memory");
 					// Reassign original buffer to new buffer
@@ -137,7 +138,7 @@ bool ReadTextFile(const char* pFileName, lineCallBack fun)
 				}
 				else
 				{
-					RTPrintf("\nUnable to do Conversion. Freeing memory");
+					RTPrintf("\nUnable to do Conversion Error code %d. Freeing memory", GetLastError());
 					free(tempBuffer);
 				}
 			}
