@@ -77,7 +77,7 @@ bool ReadTextFile(const char* pFileName, lineCallBack fun)
 	fseek(fp, 0L, SEEK_SET);
 	
 	RTPrintf("\nFile Size is %d", totalSize);
-	pBuffer = (char*) malloc(totalSize);
+	pBuffer = (char*) calloc(totalSize + 1, 1);
 	if (!pBuffer)
 	{
 	    RTPrintf("\nUnable to allocate memory of bytes %d", totalSize);
@@ -105,29 +105,31 @@ bool ReadTextFile(const char* pFileName, lineCallBack fun)
 			RTPrintf("\nUnable to read complete file. Read %d out of %d", readBytes, totalSize);
 		}
 	}
+	pBuffer[totalSize] = 0;
+
 	// All the contents of file has been read. Now check the file type
 	PWSTR pHeader = reinterpret_cast<PWSTR>(pBuffer);
 	if ( (*pHeader) == 0xFFFE || (*pHeader) == 0xFEFF)
 	{
 		DWORD tempSize = 0;
 		char *tempBuffer = NULL;
-		DWORD curSz = totalSize- 2;
+		DWORD curSz = totalSize - 2;
 		RTPrintf("\nReadFile is Unicode indeed. Signature %x", (*pHeader));
 		pHeader++;
 		
 		success = false;
 		//Note: Skip the header signature while reading file
-		tempSize = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)(pHeader), curSz, NULL, 0, NULL, NULL);
+		tempSize = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)(pHeader), -1 , NULL, 0, NULL, NULL);
 		RTPrintf("\nFile requires memory of %d to be converted", tempSize);	
 		// Do not allocate more than 1Meg
 		if (tempSize < 0x100000)
 		{
-			tempSize += 100;
-			tempBuffer = (char*) malloc(tempSize);
+			tempSize += 1;
+			tempBuffer = (char*) calloc(tempSize , 1);
 			if (tempBuffer)
 			{
 				RTPrintf("\nAllocated memory. Starting conversion");
-				if ( 0 != WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)(pHeader), curSz, tempBuffer, tempSize, NULL, NULL))
+				if ( 0 != WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)(pHeader), -1, tempBuffer, tempSize, NULL, NULL))
 				{
 					RTPrintf("\nConversion completed. Swapping memory");
 					// Reassign original buffer to new buffer
@@ -135,6 +137,8 @@ bool ReadTextFile(const char* pFileName, lineCallBack fun)
 					pBuffer = tempBuffer;
 					totalSize = tempSize;
 					success = true;
+					tempBuffer[tempSize] = 0;
+					
 				}
 				else
 				{
